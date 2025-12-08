@@ -1,0 +1,203 @@
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: overcooked_postgres
+    environment:
+      POSTGRES_DB: overcooked
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5444:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - overcooked_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: overcooked_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - overcooked_network
+    volumes:
+      - redis_data:/data  # Добавь эту строку!
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: overcooked_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - overcooked_network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: overcooked_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - overcooked_network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  dish-svc:
+    build: ./dish-svc
+    container_name: dish_svc
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: overcooked
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8081/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - overcooked_network
+    volumes:
+      - ./uploads:/root/uploads
+
+  rate-svc:
+    build: ./rate-svc
+    container_name: rate_svc
+    ports:
+      - "8082:8082"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: overcooked
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BROKER: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - overcooked_network
+
+  agg-svc:
+    build: ./agg-svc
+    container_name: agg_svc
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: overcooked
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BROKER: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - overcooked_network
+
+  analytics-svc:
+    build: ./analytics-svc
+    container_name: analytics_svc
+    ports:
+      - "8084:8083"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: overcooked
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8083/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - overcooked_network
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      DISH_SVC_URL: http://dish-svc:8081
+      RATE_SVC_URL: http://rate-svc:8082
+      ANALYTICS_SVC_URL: http://analytics-svc:8083
+    depends_on:
+      - dish-svc
+      - rate-svc
+      - analytics-svc
+    networks:
+      - overcooked_network
+    volumes:
+      - ./frontend:/app/frontend
+
+  frontend:
+    image: nginx:alpine
+    container_name: overcooked_frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./uploads:/usr/share/nginx/html/uploads:ro
+    depends_on:
+      - api-gateway
+    networks:
+      - overcooked_network
+
+networks:
+  overcooked_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:     # Добавь это!

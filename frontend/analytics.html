@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overcooked - Аналитика</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-utensils text-3xl text-orange-500"></i>
+                    <h1 class="text-3xl font-bold text-gray-900">Overcooked</h1>
+                </div>
+                <nav class="flex gap-8">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">Главная</a>
+                    <a href="analytics.html" class="text-gray-900 font-medium border-b-2 border-orange-500">Аналитика</a>
+                    <a href="admin.html" class="text-gray-600 hover:text-gray-900">Админ</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">Аналитика отзывов</h2>
+            <p class="text-gray-600">Статистика и рейтинги блюд по отзывам клиентов</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6 transition transform hover:-translate-y-1">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-500">
+                        <i class="fas fa-star text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Средний рейтинг</p>
+                        <p class="text-2xl font-bold text-gray-900" id="avg-rating">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 transition transform hover:-translate-y-1">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-500">
+                        <i class="fas fa-comment text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Всего отзывов</p>
+                        <p class="text-2xl font-bold text-gray-900" id="total-reviews">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 transition transform hover:-translate-y-1">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-500">
+                        <i class="fas fa-utensils text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Оцененных блюд</p>
+                        <p class="text-2xl font-bold text-gray-900" id="reviewed-dishes">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 transition transform hover:-translate-y-1">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-500">
+                        <i class="fas fa-store text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Активных кафе</p>
+                        <p class="text-2xl font-bold text-gray-900" id="active-cafes">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Dishes Sections -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Top Today -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                    <i class="fas fa-fire text-red-500 mr-2"></i>
+                    Топ блюд сегодня
+                </h3>
+                <div id="top-today-loading" class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+                    <p class="text-gray-500 mt-2">Загрузка...</p>
+                </div>
+                <div id="top-today-content" class="hidden">
+                    <div id="top-today-list" class="space-y-4">
+                        <!-- Блюда будут загружены динамически -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top All Time -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                    <i class="fas fa-trophy text-yellow-500 mr-2"></i>
+                    Топ блюд за все время
+                </h3>
+                <div id="top-alltime-loading" class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+                    <p class="text-gray-500 mt-2">Загрузка...</p>
+                </div>
+                <div id="top-alltime-content" class="hidden">
+                    <div id="top-alltime-list" class="space-y-4">
+                        <!-- Блюда будут загружены динамически -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="mt-8 bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-6">Распределение оценок</h3>
+            <div class="h-64">
+                <canvas id="ratings-chart"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center text-gray-600">
+                <p>&copy; 2024 Overcooked. Система отзывов для кафе и ресторанов.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="analytics.js"></script>
+</body>
+</html>
