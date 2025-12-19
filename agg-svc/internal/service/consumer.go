@@ -44,6 +44,9 @@ func (c *Consumer) Start(ctx context.Context) {
 }
 
 func (c *Consumer) ProcessReview(msg domain.KafkaMessage) {
+	if msg.Type != "new_review" {
+		return
+	}
 	log.Printf("Processing review: DishID=%d, RestaurantID=%d, Rating=%d",
 		msg.DishID, msg.RestaurantID, msg.Rating)
 

@@ -11,6 +11,7 @@ import (
 	httpapi "overcooked-simplified/rate-svc/internal/api/http"
 	"overcooked-simplified/rate-svc/internal/domain"
 	"overcooked-simplified/rate-svc/internal/mocks"
+	"overcooked-simplified/rate-svc/internal/service"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -56,7 +57,7 @@ func TestHandler_createReview(t *testing.T) {
 			payload: `{"dish_id":1,"order_id":99,"restaurant_id":10,"rating":3}`,
 			prepareMocks: func() {
 				mockSvc.On("CreateOrUpdate", mock.Anything, mock.Anything).
-					Return(errors.New("dish was not ordered for this check")).Once()
+					Return(service.ErrDishNotInOrder).Once()
 			},
 			expectedCode: http.StatusBadRequest,
 		},
