@@ -1,14 +1,14 @@
-
 services:
   postgres:
     image: postgres:15
     container_name: overcooked_postgres
+    ports:
+      - "5444:5432"
     environment:
+      # Оставьте только то, что генерирует Docker Compose
       POSTGRES_DB: overcooked
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5444:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
@@ -28,7 +28,7 @@ services:
     networks:
       - overcooked_network
     volumes:
-      - redis_data:/data  # Добавь эту строку!
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -67,16 +67,13 @@ services:
       retries: 3
 
   dish-svc:
-    build: ./dish-svc
+    build:
+      context: .
+      dockerfile: dish-svc/Dockerfile
     container_name: dish_svc
     ports:
       - "8081:8081"
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: overcooked
-      DB_USER: postgres
-      DB_PASSWORD: postgres
+    env_file: .env
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8081/health || exit 1"]
       interval: 5s
@@ -91,18 +88,15 @@ services:
       - ./uploads:/root/uploads
 
   rate-svc:
-    build: ./rate-svc
+    build:
+      context: .
+      dockerfile: rate-svc/Dockerfile
     container_name: rate_svc
     ports:
       - "8082:8082"
+    env_file: .env
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: overcooked
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+
       KAFKA_BROKER: kafka:29092
     depends_on:
       postgres:
@@ -115,16 +109,13 @@ services:
       - overcooked_network
 
   agg-svc:
-    build: ./agg-svc
+    build:
+      context: .
+      dockerfile: agg-svc/Dockerfile
     container_name: agg_svc
+    env_file: .env
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: overcooked
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      # ✅ Только внутренние адреса
       KAFKA_BROKER: kafka:29092
     depends_on:
       postgres:
@@ -137,18 +128,13 @@ services:
       - overcooked_network
 
   analytics-svc:
-    build: ./analytics-svc
+    build:
+      context: .
+      dockerfile: analytics-svc/Dockerfile
     container_name: analytics_svc
     ports:
       - "8084:8083"
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: overcooked
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+    env_file: .env
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8083/health || exit 1"]
       interval: 5s
@@ -163,11 +149,14 @@ services:
       - overcooked_network
 
   api-gateway:
-    build: ./api-gateway
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
     container_name: api_gateway
     ports:
       - "8080:8080"
     environment:
+      # ✅ Только внутренние адреса между сервисами
       DISH_SVC_URL: http://dish-svc:8081
       RATE_SVC_URL: http://rate-svc:8082
       ANALYTICS_SVC_URL: http://analytics-svc:8083
@@ -200,4 +189,4 @@ networks:
 
 volumes:
   postgres_data:
-  redis_data:     # Добавь это!
+  redis_data:
