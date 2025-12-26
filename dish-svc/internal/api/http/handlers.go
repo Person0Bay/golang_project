@@ -3,14 +3,14 @@ package httpapi
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"os"
+	"overcooked-simplified/dish-svc/internal/domain"
+	"overcooked-simplified/dish-svc/internal/service"
 	"path/filepath"
 	"strconv"
 	"time"
-
-	"overcooked-simplified/dish-svc/internal/domain"
-	"overcooked-simplified/dish-svc/internal/service"
 
 	"github.com/gorilla/mux"
 )
@@ -148,6 +148,7 @@ func (h *Handler) uploadRestaurantImage(w http.ResponseWriter, r *http.Request) 
 
 	uploadDir := "./uploads"
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		log.Printf("❌ Failed to create uploads dir: %v", err) // Добавьте лог!
 		http.Error(w, "Failed to create upload directory", http.StatusInternalServerError)
 		return
 	}

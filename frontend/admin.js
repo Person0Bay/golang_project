@@ -152,13 +152,17 @@ async function loadCafeDishes(cafeId) {
 function createDishSelectionElement(dish) {
     const div = document.createElement('div');
     div.className = 'flex items-center gap-3 p-3 bg-white border border-gray-300 rounded-lg';
+
+    // ✅ ИСПРАВЛЕНО: Используем dish.dish_id
+    const dishId = dish.dish_id || dish.id;
+
     div.innerHTML = `
-        <input type="checkbox" class="dish-checkbox" id="dish-${dish.id}" value="${dish.id}" onchange="updateTotalAmount()">
-        <label for="dish-${dish.id}" class="flex-1 cursor-pointer">
+        <input type="checkbox" class="dish-checkbox" id="dish-${dishId}" value="${dishId}" onchange="updateTotalAmount()">
+        <label for="dish-${dishId}" class="flex-1 cursor-pointer">
             <span class="font-medium">${dish.name}</span>
             <span class="text-gray-600 ml-2">${dish.price}₽</span>
         </label>
-        <input type="number" class="dish-quantity" min="1" max="99" value="1" id="quantity-${dish.id}" style="width: 4rem;" onchange="updateTotalAmount()">
+        <input type="number" class="dish-quantity" min="1" max="99" value="1" id="quantity-${dishId}" style="width: 4rem;" onchange="updateTotalAmount()">
     `;
     return div;
 }
@@ -633,15 +637,16 @@ function showNotification(message, type = 'info') {
 function openEditDishModal(dish) {
     document.getElementById('dish-form').reset();
 
-    document.getElementById('dish-id').value = dish.id;
+    // ✅ ИСПРАВЛЕНО: Используем dish.dish_id вместо dish.id
+    document.getElementById('dish-id').value = dish.dish_id || dish.id || '';
     document.getElementById('dish-name').value = dish.name;
     document.getElementById('dish-price').value = dish.price;
     document.getElementById('dish-description').value = dish.description || '';
 
-    // Логика предпросмотра
     const previewContainer = document.getElementById('dish-preview-container');
     const previewImg = document.getElementById('dish-preview-img');
 
+    // ✅ ИСПРАВЛЕНО: Проверяем правильное поле
     if (dish.image_url) {
         previewImg.src = `${dish.image_url}?t=${new Date().getTime()}`;
         previewContainer.classList.remove('hidden');
